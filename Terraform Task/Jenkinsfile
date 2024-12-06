@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    environment {
+        TF_VERSION = "1.5.0" // Specify Terraform version
+    }
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Setup Terraform') {
+            steps {
+                script {
+                    sh """
+                    wget https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
+                    unzip terraform_${TF_VERSION}_linux_amd64.zip
+                    sudo mv terraform /usr/local/bin/
+                    terraform -version
+                    """
+                }
+            }
+        }
+        stage('Initialize Terraform') {
+            steps {
+                sh 'terraform init'
+            }
+        }
+        stage('Plan Infrastructure') {
+            steps {
+                sh 'terraform plan -var-file=terraform.tfvars'
+            }
+        }
+        stage('Apply Infrastructure') {
+            steps {
+                input "Approve to apply changes?"
+                sh 'terraform apply -var-file=terraform.tfvars -auto-approve'
+            }
+        }
+    }
+}
